@@ -1,32 +1,30 @@
 // =========================================================================
 // Capa "dispositivo": simula el flujo de datos de una diadema EEG.
-// En un caso real, aquí abrirías un WebSocket / Web Bluetooth / Serial
-// hacia el hardware (p.ej. NeuroSky, Muse, OpenBCI) y emitirías eventos.
 // =========================================================================
 class SimulatedBCIDevice extends EventTarget {
     constructor() {
         super();
         this.connected = false;
         this._timer = null;
-        // valores 0..1 con paseo aleatorio suave (estado mental)
         this.attention = 0.4;
         this.meditation = 0.5;
     }
 
     connect() {
+        if (this.connected) return;
         this.connected = true;
-        // 10 Hz de muestreo, como muchos SDK de EEG de consumo
         this._timer = setInterval(() => this._tick(), 100);
         this.dispatchEvent(new Event('connect'));
     }
 
     disconnect() {
+        if (!this.connected) return;
         this.connected = false;
         clearInterval(this._timer);
+        this._timer = null;
         this.dispatchEvent(new Event('disconnect'));
     }
 
-    // genera nueva muestra (random walk acotado) y la emite
     _tick() {
         this.attention = this._walk(this.attention);
         this.meditation = this._walk(this.meditation);
@@ -40,7 +38,6 @@ class SimulatedBCIDevice extends EventTarget {
         return Math.max(0, Math.min(1, v));
     }
 
-    // evento discreto: parpadeo detectado (artefacto EOG)
     blink() {
         if (!this.connected) return;
         this.dispatchEvent(new Event('blink'));
@@ -63,8 +60,16 @@ const mediV = document.querySelector('#medi-v');
 const statusEl = document.querySelector('#status');
 const connectBtn = document.querySelector('#connect');
 const blinkBtn = document.querySelector('#blink');
+const cube = document.querySelector('#cube');
+const star = document.querySelector('#star');
+const starParts = document.querySelectorAll('.star-part');
 
-// mapea color frío→cálido según meditación (HSL: 200° azul → 20° naranja)
+function setStarGlow(intensity) {
+    starParts.forEach((part) => {
+        part.setAttribute('material', 'emissiveIntensity', intensity);
+    });
+}
+
 function meditationColor(m) {
     const hue = 200 - m * 180;
     return `hsl(${hue}, 80%, 55%)`;
@@ -80,17 +85,35 @@ device.addEventListener('data', (e) => {
     orb.setAttribute('radius', r);
     pulse.setAttribute('position', { x: 0, y, z: -3 });
 
-    // Meditación → color
+    // Meditación → color de la esfera
     orb.setAttribute('color', meditationColor(meditation));
 
     // HUD 2D y 3D
-    const a = Math.round(attention * 100), m = Math.round(meditation * 100);
-    attnBar.style.width = a + '%'; attnV.textContent = a + '%';
-    mediBar.style.width = m + '%'; mediV.textContent = m + '%';
+    const a = Math.round(attention * 100);
+    const m = Math.round(meditation * 100);
+    attnBar.style.width = a + '%';
+    attnV.textContent = a + '%';
+    mediBar.style.width = m + '%';
+    mediV.textContent = m + '%';
     hud3d.setAttribute('value', `Atencion: ${a}%\nMeditacion: ${m}%`);
+
+    // Cubo → color por meditación y rotación sobre su propio eje Y
+    cube.setAttribute('color', meditationColor(meditation));
+    const cubeRot = cube.getAttribute('rotation');
+    cube.setAttribute('rotation', {
+        x: cubeRot.x,
+        y: (cubeRot.y + 1.2 + meditation * 2.5) % 360,
+        z: cubeRot.z
+    });
+
+    // Estrella → altura y nivel de iluminación según atención
+    const starY = 1.2 + attention * 1.5;
+    const glowIntensity = 0.2 + attention * 1.6;
+    star.setAttribute('position', { x: 2.2, y: starY, z: -3 });
+    setStarGlow(glowIntensity);
 });
 
-// Parpadeo → pulso visual + pequeño "salto" del usuario hacia delante
+// Parpadeo → pulso visual, salto del usuario y destello de la estrella
 device.addEventListener('blink', () => {
     pulse.setAttribute('visible', true);
     pulse.setAttribute('scale', '0.5 0.5 0.5');
@@ -100,10 +123,17 @@ device.addEventListener('blink', () => {
         'property: material.opacity; from: 0.8; to: 0; dur: 400');
     setTimeout(() => pulse.setAttribute('visible', false), 420);
 
-    // teletransporte corto hacia el frente (interacción "manos libres")
     const p = rig.getAttribute('position');
     rig.setAttribute('animation__move',
         `property: position; to: ${p.x} ${p.y} ${p.z - 0.8}; dur: 300`);
+
+    star.setAttribute('animation__blink',
+        'property: scale; from: 0.7 0.7 0.7; to: 1.2 1.2 1.2; dur: 250; dir: alternate; loop: 1');
+
+    setStarGlow(3.0);
+    setTimeout(() => {
+        setStarGlow(0.2 + device.attention * 1.6);
+    }, 350);
 });
 
 // --- Conexión / desconexión ---
@@ -132,5 +162,8 @@ device.addEventListener('disconnect', () => {
 // --- Disparar parpadeo: botón o tecla Espacio ---
 blinkBtn.addEventListener('click', () => device.blink());
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') { e.preventDefault(); device.blink(); }
+    if (e.code === 'Space') {
+        e.preventDefault();
+        device.blink();
+    }
 });
