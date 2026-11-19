@@ -45,6 +45,44 @@ class SimulatedBCIDevice extends EventTarget {
 }
 
 // =========================================================================
+// Sonido "boing boing" suave sintetizado con Web Audio API
+// =========================================================================
+let audioCtx = null;
+
+function playBoing(pitchMultiplier = 1) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    if (!audioCtx) {
+        audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    const baseFreq = 150 * pitchMultiplier;
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.45, now + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.9, now + 0.35);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.1, now + 0.5);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.16, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.56);
+}
+
+// =========================================================================
 // Capa "aplicación VR": consume los eventos y actualiza la escena.
 // =========================================================================
 const device = new SimulatedBCIDevice();
@@ -63,6 +101,23 @@ const blinkBtn = document.querySelector('#blink');
 const cube = document.querySelector('#cube');
 const star = document.querySelector('#star');
 const starParts = document.querySelectorAll('.star-part');
+
+// Genera un color vibrante al azar en formato HSL
+function randomColor() {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 85%, 60%)`;
+}
+
+// Aplica un color aleatorio a las figuras principales
+function randomizeShapesColors() {
+    const starColor = randomColor();
+    orb.setAttribute('color', randomColor());
+    cube.setAttribute('color', randomColor());
+    starParts.forEach((part) => {
+        part.setAttribute('color', starColor);
+        part.setAttribute('material', 'emissive', starColor);
+    });
+}
 
 function setStarGlow(intensity) {
     starParts.forEach((part) => {
@@ -113,8 +168,10 @@ device.addEventListener('data', (e) => {
     setStarGlow(glowIntensity);
 });
 
-// Parpadeo → pulso visual, salto del usuario y destello de la estrella
+// Parpadeo → colores al azar, pulso visual, salto del usuario y rebote suave
 device.addEventListener('blink', () => {
+    randomizeShapesColors();
+
     pulse.setAttribute('visible', true);
     pulse.setAttribute('scale', '0.5 0.5 0.5');
     pulse.setAttribute('animation__grow',
@@ -127,6 +184,10 @@ device.addEventListener('blink', () => {
     rig.setAttribute('animation__move',
         `property: position; to: ${p.x} ${p.y} ${p.z - 0.8}; dur: 300`);
 
+    // Rebote suave y orgánico en la esfera principal
+    orb.setAttribute('animation__boing',
+        'property: scale; from: 1 1 1; to: 1.12 0.90 1.12; dur: 240; dir: alternate; loop: 1; easing: easeOutSine');
+
     star.setAttribute('animation__blink',
         'property: scale; from: 0.7 0.7 0.7; to: 1.2 1.2 1.2; dur: 250; dir: alternate; loop: 1');
 
@@ -134,6 +195,8 @@ device.addEventListener('blink', () => {
     setTimeout(() => {
         setStarGlow(0.2 + device.attention * 1.6);
     }, 350);
+
+    playBoing(0.9 + device.attention * 0.4);
 });
 
 // --- Conexión / desconexión ---
