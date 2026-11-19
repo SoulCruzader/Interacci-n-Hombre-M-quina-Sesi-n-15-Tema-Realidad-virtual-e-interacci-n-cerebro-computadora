@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VR + Interfaz Cerebro-Computadora (BCI) – Demo</title>
+    <link rel="stylesheet" href="estilo.css">
+    <!-- A-Frame: framework VR para navegador (WebXR) -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+</head>
+
+<body>
+    <!-- ============ HUD 2D: lectura del "dispositivo BCI" ============ -->
+    <div id="panel">
+        <h1>🧠 Diadema BCI (simulada)</h1>
+
+        <div class="metric">
+            <label>Atención <span id="attn-v">0%</span></label>
+            <div class="bar" id="attn"><span></span></div>
+        </div>
+
+        <div class="metric">
+            <label>Meditación <span id="medi-v">0%</span></label>
+            <div class="bar" id="medi"><span></span></div>
+        </div>
+
+        <button id="connect">Conectar dispositivo</button>
+        <button id="blink" class="off">Simular parpadeo (acción) · <kbd>Espacio</kbd></button>
+
+        <div class="status" id="status">
+            Estado: <b>desconectado</b><br>
+            • La <b>atención</b> eleva y agranda la esfera.<br>
+            • La <b>meditación</b> cambia su color (frío→cálido).<br>
+            • Un <b>parpadeo</b> dispara un pulso/teletransporte.
+        </div>
+    </div>
+    • La <b>meditación</b> cambia su color (frío→cálido).<br>
+    • Un <b>parpadeo</b> dispara un pulso/teletransporte.
+    </div>
+    </div>
+
+    <!-- ================ Escena VR (A-Frame) ================ -->
+    <a-scene background="color: #0d1020" renderer="colorManagement: true">
+        <!-- Cámara con controles de ratón/táctil y soporte WebXR -->
+        <a-entity id="rig" position="0 1.6 4">
+            <a-camera wasd-controls look-controls></a-camera>
+        </a-entity>
+
+        <!-- Iluminación -->
+        <a-light type="ambient" color="#445"></a-light>
+        <a-light type="point" intensity="0.9" position="2 4 4"></a-light>
+
+        <!-- Suelo -->
+        <a-plane rotation="-90 0 0" width="40" height="40" color="#1a1f3a" material="shader: flat"></a-plane>
+
+        <!-- Objeto principal controlado por la BCI -->
+        <a-sphere id="orb" position="0 1.5 -3" radius="0.6" color="#2a9df4" material="metalness:0.3; roughness:0.4">
+            <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
+        </a-sphere>
+        <!-- Anillo que pulsa al "parpadear" -->
+        <a-ring id="pulse" position="0 1.5 -3" radius-inner="0.7" radius-outer="0.8" color="#3ad6c0" visible="false"
+            material="shader: flat; opacity: 0.8; transparent: true"></a-ring>
+
+        <a-text id="hud3d" value="" position="-1.2 2.6 -3" color="#fff" width="4"></a-text>
+    </a-scene>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

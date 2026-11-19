@@ -1,0 +1,88 @@
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+}
+
+/* Panel HUD 2D superpuesto sobre la escena VR */
+#panel {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    background: rgba(15, 18, 30, 0.85);
+    color: #e8ecf5;
+    padding: 16px;
+    border-radius: 12px;
+    width: 280px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .4);
+}
+
+#panel h1 {
+    font-size: 15px;
+    margin: 0 0 10px;
+}
+
+.metric {
+    margin: 10px 0;
+}
+
+.metric label {
+    font-size: 12px;
+    opacity: .8;
+    display: flex;
+    justify-content: space-between;
+}
+
+.bar {
+    height: 10px;
+    background: #2a3050;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.bar>span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    transition: width .25s ease;
+}
+
+#attn>span {
+    background: linear-gradient(90deg, #3ad6c0, #2a9df4);
+}
+
+#medi>span {
+    background: linear-gradient(90deg, #f4a72a, #f45a2a);
+}
+
+.status {
+    font-size: 11px;
+    margin-top: 12px;
+    opacity: .75;
+    line-height: 1.5;
+}
+
+button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: #2a9df4;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button.off {
+    background: #555c75;
+}
+
+kbd {
+    background: #2a3050;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+}
